@@ -4,3 +4,5 @@ src-tauri/target/
 src-tauri/gen/
 *.bak
 .DS_Store
+src-tauri/icons/android/
+src-tauri/icons/ios/
