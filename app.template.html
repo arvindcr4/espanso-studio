@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espanso Studio</title>
+<script>__JSYAML__</script>
+<style>
+  :root{
+    --accent:#0A84FF; --accent-press:#0066D6;
+    --bg:#F5F5F7; --sidebar:#ECECEF; --panel:#FFFFFF;
+    --hair:rgba(0,0,0,.08); --hair-strong:rgba(0,0,0,.14);
+    --text:#1D1D1F; --text-2:#6E6E73; --text-3:#AEAEB2;
+    --sel:rgba(10,132,255,.12);
+    --radius:10px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--font);color:var(--text);background:var(--bg);font-size:13px;-webkit-font-smoothing:antialiased;overflow:hidden}
+  #app{display:flex;flex-direction:column;height:100vh}
+
+  /* title bar */
+  .titlebar{height:52px;display:flex;align-items:center;gap:12px;padding:0 14px;
+    background:linear-gradient(#FBFBFD,#F0F0F3);border-bottom:1px solid var(--hair-strong);flex:none;user-select:none}
+  .lights{display:flex;gap:8px;margin-right:4px}
+  .light{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+  .light.r{background:#FF5F57}.light.y{background:#FEBC2E}.light.g{background:#28C840}
+  .appname{font-weight:600;font-size:13px;letter-spacing:-.01em}
+  .appname .sub{font-weight:400;color:var(--text-2)}
+  .toolbar{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .search{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--hair-strong);
+    border-radius:8px;padding:5px 10px;width:240px;color:var(--text-2)}
+  .search input{border:0;outline:0;background:transparent;font:inherit;width:100%;color:var(--text)}
+  .btn{border:1px solid var(--hair-strong);background:linear-gradient(#fff,#F4F4F6);border-radius:8px;
+    padding:5px 12px;font:inherit;font-weight:500;color:var(--text);cursor:pointer;box-shadow:0 .5px 1px rgba(0,0,0,.05)}
+  .btn:hover{background:#fff}
+  .btn:active{transform:translateY(.5px)}
+  .btn.primary{background:linear-gradient(#2F95FF,#0A84FF);border-color:rgba(0,0,0,.12);color:#fff}
+  .btn.primary:hover{background:var(--accent-press)}
+
+  #main{flex:1;display:flex;min-height:0}
+
+  /* sidebar */
+  .sidebar{width:230px;flex:none;background:var(--sidebar);border-right:1px solid var(--hair-strong);
+    display:flex;flex-direction:column}
+  .sidebar .head{padding:14px 14px 8px;font-size:11px;font-weight:600;color:var(--text-2);
+    text-transform:uppercase;letter-spacing:.06em}
+  .sets{flex:1;overflow-y:auto;padding:0 8px}
+  .set{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px}
+  .set .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .set .name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+  .set .count{font-size:11px;color:var(--text-2);background:rgba(0,0,0,.05);border-radius:9px;padding:1px 7px}
+  .set.active{background:var(--sel);color:var(--accent)}
+  .set.active .count{background:rgba(10,132,255,.15);color:var(--accent)}
+  .sidebar .foot{border-top:1px solid var(--hair);padding:10px;display:flex;gap:8px}
+  .iconbtn{flex:1;border:1px solid var(--hair-strong);background:#fff;border-radius:8px;padding:5px 0;font:inherit;
+    color:var(--text-2);cursor:pointer;text-align:center}
+  .iconbtn:hover{color:var(--text)}
+
+  /* snippet list */
+  .list{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--panel)}
+  .listhead{display:grid;grid-template-columns:150px 1fr 92px;gap:10px;padding:9px 16px;
+    font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;
+    border-bottom:1px solid var(--hair);flex:none}
+  .rows{flex:1;overflow-y:auto}
+  .row{display:grid;grid-template-columns:150px 1fr 92px;gap:10px;align-items:center;
+    padding:9px 16px;border-bottom:1px solid var(--hair);cursor:pointer}
+  .row:hover{background:rgba(0,0,0,.02)}
+  .row.active{background:var(--sel)}
+  .trig{font-family:var(--mono);font-size:12.5px;font-weight:600;color:#B3251E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .exp{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .exp .lbl{color:var(--text-3);font-style:italic}
+  .kind{justify-self:start;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:9px;letter-spacing:.02em}
+  .kind.Text{background:#E8E8ED;color:#6E6E73}
+  .kind.Regex{background:#FDE9F2;color:#C2255C}
+  .kind.Form{background:#E7F5EC;color:#1E7B3C}
+  .kind.Rich{background:#E9F0FD;color:#1B5FD9}
+  .kind.Image{background:#FFF3E0;color:#B25E09}
+  .kind.Dynamic{background:#F0E9FD;color:#6B3FD4}
+  .empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:13px}
+
+  /* inspector */
+  .inspector{width:360px;flex:none;border-left:1px solid var(--hair-strong);background:var(--panel);
+    overflow-y:auto;padding:18px}
+  .inspector h2{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-bottom:2px}
+  .inspector .path{font-size:11px;color:var(--text-3);margin-bottom:16px;font-family:var(--mono)}
+  .field{margin-bottom:14px}
+  .field>label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+  .field input[type=text],.field textarea,.field select{width:100%;border:1px solid var(--hair-strong);
+    border-radius:8px;padding:7px 10px;font:inherit;background:#FBFBFD;color:var(--text);outline:none}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.15);background:#fff}
+  .field textarea{min-height:110px;resize:vertical;line-height:1.5;font-family:var(--mono);font-size:12px}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+  .check{display:flex;gap:7px;align-items:center;color:var(--text);cursor:pointer;font-size:12.5px}
+  .check input{accent-color:var(--accent)}
+  .check .hint{display:block;color:var(--text-3);font-size:11px}
+  .row-actions{display:flex;gap:8px;margin-top:6px}
+  .row-actions .btn{flex:1}
+  .btn.danger{color:#C62828}
+  .preview{border:1px dashed var(--hair-strong);border-radius:8px;padding:10px;background:#FBFBFD;
+    font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+  .noed{color:var(--text-3);text-align:center;margin-top:60px;font-size:13px;line-height:1.7}
+  .kv{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-2);padding:3px 0;border-top:1px solid var(--hair)}
+  .kv b{color:var(--text);font-weight:600;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="titlebar">
+    <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+    <div class="appname">Espanso Studio <span class="sub">- snippet manager</span></div>
+    <div class="toolbar">
+      <div class="search"><span>&#8984;</span><input id="q" placeholder="Search snippets&hellip;"></div>
+      <button class="btn" id="openBtn">Open YAML&hellip;</button>
+      <button class="btn primary" id="exportBtn">Export YAML</button>
+    </div>
+  </div>
+  <div id="main">
+    <aside class="sidebar">
+      <div class="head">Snippet sets</div>
+      <div class="sets" id="sets"></div>
+      <div class="foot"><button class="iconbtn" id="addSet">+ New set</button></div>
+    </aside>
+    <section class="list">
+      <div class="listhead"><span>Trigger</span><span>Expansion</span><span>Type</span></div>
+      <div class="rows" id="rows"></div>
+    </section>
+    <aside class="inspector" id="inspector"></aside>
+  </div>
+</div>
+<input type="file" id="file" accept=".yml,.yaml" multiple style="display:none">
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+
+/* ---------- espanso schema helpers ---------- */
+function kindOf(m){
+  if(m.regex) return "Regex";
+  if(m.form) return "Form";
+  if(m.image_path) return "Image";
+  if(m.html||m.markdown) return "Rich";
+  if(Array.isArray(m.vars)&&m.vars.length) return "Dynamic";
+  return "Text";
+}
+function triggers(m){return m.triggers?m.triggers.slice():(m.trigger?[m.trigger]:[]);}
+function bodyOf(m){return m.replace??m.markdown??m.html??m.form??(m.image_path?("[image] "+m.image_path):"");}
+const FIELD_ORDER=["trigger","triggers","regex","label","replace","markdown","html","form","form_fields","image_path","word","left_word","right_word","propagate_case","uppercase_style","force_mode","force_clipboard","paragraph","search_terms","vars","comment","anchor"];
+function dumpSet(set){
+  const matches=set.matches.map(m=>{
+    const out={};
+    for(const k of FIELD_ORDER) if(m[k]!==undefined) out[k]=m[k];
+    for(const k of Object.keys(m)) if(!(k in out)) out[k]=m[k];
+    return out;
+  });
+  return "# "+set.name+" - managed by Espanso Studio\n"+jsyaml.dump({matches},{lineWidth:100,noRefs:true,quotingType:'"'});
+}
+const PALETTE=["#0A84FF","#BF5AF2","#FF375F","#FF9F0A","#30D158","#64D2FF","#FFD60A","#AC8E68"];
+
+/* ---------- sample data (valid espanso v2 match format) ---------- */
+function sample(){
+  return [
+   {name:"base.yml",source:"~/.config/espanso/match/base.yml",matches:[
+     {trigger:":sig",label:"Work signature",replace:"Best regards,\nArvind Rajasekaran\nSenior Product Engineer\narvind@example.com"},
+     {trigger:":addr",label:"Home address",replace:"42, Sample Road\nDemo Layout\nBengaluru 560001"},
+     {triggers:[":gm",";gm"],label:"Good morning",replace:"Good morning! Hope your day is off to a great start.",propagate_case:true},
+     {trigger:":ty",label:"Thank you",replace:"Thank you so much - I really appreciate it!",word:true},
+     {trigger:":today",label:"Today's date",replace:"{{mydate}}",vars:[{name:"mydate",type:"date",params:{format:"%d %b %Y"}}]},
+     {trigger:":shrug",label:"Shrug",replace:"\u00AF\\_(\u30C4)_/\u00AF"},
+   ]},
+   {name:"emojis.yml",source:"~/.config/espanso/match/emojis.yml",matches:[
+     {trigger:":joy",replace:"\uD83D\uDE02"},
+     {trigger:":fire",replace:"\uD83D\uDD25"},
+     {trigger:":tada",replace:"\uD83C\uDF89"},
+     {trigger:":heart",replace:"\u2764\uFE0F"},
+     {trigger:":think",replace:"\uD83E\uDD14"},
+   ]},
+   {name:"dev.yml",source:"~/.config/espanso/match/dev.yml",matches:[
+     {trigger:":lgtm",label:"Code review approval",replace:"LGTM - nice work. Ship it once CI is green."},
+     {trigger:":pr",label:"PR template",markdown:"### What\n\n### Why\n\n### Test plan\n- [ ] "},
+     {regex:"@issue\\((?P<num>\\d+)\\)",label:"GitHub issue link",replace:"https://github.com/espanso/espanso/issues/{{num}}"},
+     {trigger:":fname",label:"Form: name + email",form:"First name: [[first]]\nEmail: [[email]]",form_fields:{first:{type:"string"},email:{type:"string"}}},
+   ]},
+  ];
+}
+
+/* ---------- state ---------- */
+let sets=sample();
+let sel={set:0,match:0};
+let query="";
+sets.forEach((s,i)=>s.color=PALETTE[i%PALETTE.length]);
+
+/* ---------- render: sets ---------- */
+function renderSets(){
+  const el=$("#sets"); el.innerHTML="";
+  sets.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="set"+(i===sel.set?" active":"");
+    d.innerHTML=`<span class="dot" style="background:${s.color}"></span>
+      <span class="name">${esc(s.name.replace(/\.ya?ml$/,""))}</span>
+      <span class="count">${s.matches.length}</span>`;
+    d.onclick=()=>{sel={set:i,match:0};renderAll();};
+    el.appendChild(d);
+  });
+}
+
+/* ---------- render: rows ---------- */
+function filtered(){
+  const s=sets[sel.set]; if(!s) return [];
+  const q=query.trim().toLowerCase();
+  return s.matches.map((m,idx)=>({m,idx})).filter(({m})=>{
+    if(!q) return true;
+    const hay=(triggers(m).join(" ")+" "+String(bodyOf(m))+" "+(m.label||"")).toLowerCase();
+    return hay.includes(q);
+  });
+}
+function renderRows(){
+  const el=$("#rows"); el.innerHTML="";
+  const list=filtered();
+  if(!list.length){el.innerHTML='<div class="empty">No snippets match your search.</div>';return;}
+  for(const {m,idx} of list){
+    const d=document.createElement("div");
+    d.className="row"+(idx===sel.match?" active":"");
+    const body=String(bodyOf(m)).replace(/\s+/g," ").trim();
+    d.innerHTML=`<span class="trig">${esc(triggers(m).join("  ")||m.regex||"")}</span>
+      <span class="exp">${m.label?`<span class="lbl">${esc(m.label)} &middot; </span>`:""}${esc(body.slice(0,90))}</span>
+      <span class="kind ${kindOf(m)}">${kindOf(m)}</span>`;
+    d.onclick=()=>{sel.match=idx;renderRows();renderInspector();};
+    el.appendChild(d);
+  }
+}
+
+/* ---------- render: inspector ---------- */
+function cur(){const s=sets[sel.set];return s&&s.matches[sel.match]?s.matches[sel.match]:null;}
+function renderInspector(){
+  const el=$("#inspector"); const m=cur();
+  if(!m){el.innerHTML='<div class="noed">Select a snippet to edit,<br>or add a new one.</div>';return;}
+  const isRegex=!!m.regex;
+  el.innerHTML=`
+    <h2>${esc(m.label||triggers(m)[0]||m.regex||"Snippet")}</h2>
+    <div class="path">${esc(sets[sel.set].source||sets[sel.set].name)}</div>
+    <div class="field"><label>Label</label><input type="text" id="f-label" value="${esc(m.label||"")}" placeholder="Optional name"></div>
+    <div class="field"><label>${isRegex?"Regex trigger":"Triggers (comma separated)"}</label>
+      <input type="text" id="f-trig" value="${esc(isRegex?m.regex:triggers(m).join(", "))}"></div>
+    <div class="field"><label>Expansion</label><textarea id="f-body">${esc(String(bodyOf(m)))}</textarea></div>
+    <div class="field"><label>Matching</label><div class="checks">
+      <label class="check"><input type="checkbox" id="f-word" ${m.word?"checked":""}>Word<span class="hint">whole words only</span></label>
+      <label class="check"><input type="checkbox" id="f-case" ${m.propagate_case?"checked":""}>Case<span class="hint">match typed case</span></label>
+      <label class="check"><input type="checkbox" id="f-left" ${m.left_word?"checked":""}>Left word</label>
+      <label class="check"><input type="checkbox" id="f-right" ${m.right_word?"checked":""}>Right word</label>
+    </div></div>
+    <div class="field"><label>Preview</label><div class="preview">${esc(String(bodyOf(m)))||"<span style='color:#AEAEB2'>Nothing yet</span>"}</div></div>
+    <div class="kv"><span>Type</span><b>${kindOf(m)}</b></div>
+    <div class="kv"><span>Characters</span><b>${String(bodyOf(m)).length}</b></div>
+    <div class="row-actions">
+      <button class="btn" id="dupBtn">Duplicate</button>
+      <button class="btn danger" id="delBtn">Delete</button>
+    </div>`;
+  const upd=fn=>{fn();renderRows();};
+  $("#f-label").oninput=e=>upd(()=>{const v=e.target.value.trim();v?m.label=v:delete m.label;});
+  $("#f-trig").oninput=e=>upd(()=>{
+    const v=e.target.value;
+    if(isRegex){m.regex=v;}else{
+      const parts=v.split(",").map(s=>s.trim()).filter(Boolean);
+      delete m.triggers; delete m.trigger;
+      if(parts.length>1)m.triggers=parts; else if(parts.length)m.trigger=parts[0];
+    }});
+  $("#f-body").oninput=e=>{const v=e.target.value;
+    if(m.replace!==undefined||kindOf(m)==="Text"||kindOf(m)==="Dynamic"){m.replace=v;delete m.markdown;delete m.html;}
+    else if(m.markdown!==undefined)m.markdown=v; else if(m.html!==undefined)m.html=v; else if(m.form!==undefined)m.form=v; else m.replace=v;
+    renderRows();$(".preview").textContent=v;};
+  const flag=(id,key)=>$(id).onchange=e=>upd(()=>{e.target.checked?m[key]=true:delete m[key];});
+  flag("#f-word","word");flag("#f-case","propagate_case");flag("#f-left","left_word");flag("#f-right","right_word");
+  $("#dupBtn").onclick=()=>{const c=JSON.parse(JSON.stringify(m));sets[sel.set].matches.splice(sel.match+1,0,c);sel.match++;renderAll();};
+  $("#delBtn").onclick=()=>{sets[sel.set].matches.splice(sel.match,1);sel.match=Math.max(0,sel.match-1);renderAll();};
+}
+
+function renderAll(){renderSets();renderRows();renderInspector();}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+/* ---------- actions ---------- */
+$("#q").oninput=e=>{query=e.target.value;renderRows();};
+$("#addSet").onclick=()=>{
+  const name="set"+(sets.length+1)+".yml";
+  sets.push({name,source:"~/.config/espanso/match/"+name,matches:[],color:PALETTE[sets.length%PALETTE.length]});
+  sel={set:sets.length-1,match:0};renderAll();
+};
+$("#openBtn").onclick=()=>$("#file").click();
+$("#file").onchange=async e=>{
+  for(const f of e.target.files){
+    try{
+      const doc=jsyaml.load(await f.text());
+      if(doc&&Array.isArray(doc.matches)){
+        sets.push({name:f.name,source:f.name,matches:doc.matches,color:PALETTE[sets.length%PALETTE.length]});
+      }
+    }catch(err){alert("Could not parse "+f.name+": "+err.message);}
+  }
+  sel={set:sets.length-1,match:0};renderAll();e.target.value="";
+};
+$("#exportBtn").onclick=()=>{
+  const s=sets[sel.set]; if(!s)return;
+  const blob=new Blob([dumpSet(s)],{type:"text/yaml"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=s.name;a.click();
+};
+/* keyboard: cmd/ctrl+enter adds a snippet */
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){
+    const s=sets[sel.set];s.matches.push({trigger:":new",replace:""});
+    sel.match=s.matches.length-1;renderAll();
+    const t=$("#f-trig");t&&t.focus();
+  }
+});
+renderAll();
+</script>
+</body>
+</html>

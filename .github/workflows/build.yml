@@ -1,0 +1,41 @@
+name: Build installers
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            bundle_glob: src-tauri/target/release/bundle/dmg/*.dmg
+            artifact: espanso-studio-macos
+          - os: windows-latest
+            bundle_glob: src-tauri/target/release/bundle/{msi,nsis}/*.exe
+            artifact: espanso-studio-windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install frontend tooling
+        run: npm install
+      - name: Generate app icons
+        run: npx tauri icon assets/icon.png
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          includeRelease: false
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.bundle_glob }}
